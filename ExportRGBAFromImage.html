@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Export RGBA From Image</title>
+</head>
+<body>
+  <h1>Export Tool RGBA From Image</h1>
+  <input type='file' id="readUrl">
+  <br>
+  <canvas id="canvasPreview"></canvas>
+  <br>
+  <canvas id="canvasTest"></canvas>
+  <br>
+  <input type='button' id="submit" value="Download table of values" style="display:none;" >
+  <input type='button' id="test" value="Test Result" style="display:none;"  >
+</body>
+<script lang="js">
+  const canvas = document.querySelector("#canvasPreview");
+  const ctx = canvas.getContext('2d');
+  const img = new Image();
+
+  const table = []
+
+  const inputImage = document.getElementById('readUrl');
+  const inputDownload = document.getElementById('submit');
+  const inputTest = document.getElementById('test');
+
+  const canvasTest = document.querySelector("#canvasTest");
+  const ctxTest = canvasTest.getContext('2d');
+
+  inputImage.addEventListener('change', handleImageAdd);
+  inputDownload.addEventListener('click', handleDownload);
+  inputTest.addEventListener('click', testData);
+  img.addEventListener('load', function() {
+    ctx.canvas.width  = img.width;
+    ctx.canvas.height = img.height;
+    ctx.drawImage(img, 0, 0);
+    window.URL.revokeObjectURL(this.src);
+  }, false);
+
+  function handleImageAdd(){
+    if (this.files[0]) {
+      img.src = window.URL.createObjectURL(this.files[0]);
+      inputDownload.style.display = 'block'
+    }else{
+      inputDownload.style.display = 'none'
+    }
+  }
+
+  function download(filename, textInput) {
+
+    var element = document.createElement('a');
+    element.setAttribute('href','data:text/plain;charset=utf-8, ' + encodeURIComponent(textInput));
+    element.setAttribute('download', filename);
+    document.body.appendChild(element);
+    element.click();
+    //document.body.removeChild(element);
+  }
+
+  function handleDownload(){
+    for (let i = 0; i < img.height ; i++) {
+      for (let j = 0; j < img.width ; j++) {
+        var pixel = ctx.getImageData(j, i, 1, 1);
+        var data = pixel.data;
+        table.push({ x: j, y: i, r: data[0] , g: data[1], b: data[2], a: data[3] })
+      } 
+    }
+    inputTest.style.display = 'block'
+
+    const text = JSON.stringify(table);
+    var filename = "rgba.json";
+    download(filename, text);
+    
+    // console.log(table);
+  }
+
+  function testData(){
+    ctxTest.canvas.width = img.width
+    ctxTest.canvas.height = img.height
+    let imageData = ctxTest.createImageData(img.width, img.height);
+    let pixels = imageData.data;
+
+    let numPixels = imageData.width*imageData.height;
+    for (let i = 0; i < numPixels; i++) {
+        pixels[i*4] = table[i].r; // Red
+        pixels[i*4+1] = table[i].g; // Green
+        pixels[i*4+2] = table[i].b; // Blue
+        pixels[i*4+3] = table[i].a; // Alpha
+    };
+
+    ctxTest.putImageData(imageData, 0, 0);
+  }
+
+  
+
+</script>
+</html>
